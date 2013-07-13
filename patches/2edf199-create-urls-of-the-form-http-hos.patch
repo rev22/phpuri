@@ -1,0 +1,82 @@
+From b4cfd4ebcd919d45b0fbe35f33c3e08c921fb8bf Mon Sep 17 00:00:00 2001
+From: Michele Bini <michele.bini@gmail.com>
+Date: Sat, 13 Jul 2013 16:44:46 +0200
+Subject: [PATCH] Create urls of the form: http://host/?x=y instead of
+ http://host?x=y; useful in some cases but makes the library generally
+ non-compliant
+
+---
+ Uri.php |   15 ++++++++++++---
+ test.sh |    4 ++--
+ 2 files changed, 14 insertions(+), 5 deletions(-)
+
+diff --git a/Uri.php b/Uri.php
+index f2cd2ed..916e9a4 100644
+--- a/Uri.php
++++ b/Uri.php
+@@ -145,23 +145,28 @@ class Uri {
+     }
+     # public get($k) { }
+     
+-    public function __toString() {
++    public function str() {
+         if (isset($this->s)) {
+             return $this->s;
+         } else {
+             $parts = $this->parts;
++            $query =  (isset($parts["query"]) 	? "?" .  $parts["query"] 		   :"");
++            $path =   (isset($parts["path"]) 		? 		 $parts["path"] 	   :"");
++            if (($path == "") && ($query != "")) $path = "/";
+             return $this->s =
+                 (isset($parts["scheme"])    ? 		 $parts["scheme"] . "://"  :"").
+                 (isset($parts["user"]) 		? 		 $parts["user"] . ":"      :"").
+                 (isset($parts["pass"]) 		? 		 $parts["pass"] . "@"      :"").
+                 (isset($parts["host"]) 		? 		 $parts["host"] 		   :"").
+                 (isset($parts["port"]) 		? ":" .  $parts["port"] 		   :"").
+-                (isset($parts["path"]) 		? 		 $parts["path"] 		   :"").
+-                (isset($parts["query"]) 	? "?" .  $parts["query"] 		   :"").
++                $path .
++                $query .
+                 (isset($parts["fragment"])  ? "#" .  $parts["fragment"] 	   :"");
+         }
+     }
+ 
++    public function __toString() { return $this->str(); }
++
+     public static function fromParts($scheme = null, $host = null, $port = null, $path = null, $query = null, $fragment = null) {
+         $x = new Uri;
+         if ($scheme    != null) $x->parts["scheme"]    = $scheme;
+@@ -172,6 +177,8 @@ class Uri {
+         if ($fragment  != null) $x->parts["fragment"]  = $fragment;
+         return $x;
+     }
++
++    public function echo() { echo $this.""; }
+ }
+ 
+ class UriQuery {
+@@ -249,4 +256,6 @@ class UriQuery {
+         if (isset($this->s)) return $this->s;
+         return $this->s = http_build_query($this->arr());
+     }
++
++    public function echo() { echo $this.""; }
+ }
+diff --git a/test.sh b/test.sh
+index 2933c1a..d9e59a7 100755
+--- a/test.sh
++++ b/test.sh
+@@ -48,8 +48,8 @@ p() {
+ }
+ 
+ v 'http://hello?blue=deep
+-http://hello?blue=deep&h=1&b=2
+-http://hello?blue=deep&b=2' p '
++http://hello/?blue=deep&h=1&b=2
++http://hello/?blue=deep&b=2' p '
+ $a = Uri::gen("http://hello?blue=deep");
+ $b = $a->merge("h=1&b=2");
+ $c = $b->del("h");
+-- 
+1.7.10.4
+
